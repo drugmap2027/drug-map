@@ -1,0 +1,133 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>管理画面</title>
+<style>
+body{font-family:sans-serif;max-width:700px;margin:20px auto;padding:20px}
+input,textarea{width:100%;box-sizing:border-box;padding:10px;margin:6px 0}
+button{padding:10px;margin:5px 0}
+</style>
+</head>
+<body>
+
+<h2>管理画面</h2>
+
+<div id="login">
+<input id="email" placeholder="メールアドレス">
+<input id="password" type="password" placeholder="パスワード">
+<button onclick="login()">ログイン</button>
+</div>
+
+<div id="panel" style="display:none">
+
+<h3>地点追加</h3>
+
+<input id="name" placeholder="名称">
+<textarea id="explanation" placeholder="説明"></textarea>
+<input id="latitude" placeholder="緯度">
+<input id="longitude" placeholder="経度">
+
+<button onclick="addSpot()">追加</button>
+
+<h3>登録済み</h3>
+<div id="list"></div>
+
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
+<script>
+const config =
+JSON.parse(localStorage.getItem("drugMapConfig") || "null");
+
+if(!config){
+  alert("先にsetup.htmlでSupabase設定をしてください");
+}else{
+
+  const client =
+  supabase.createClient(config.url,config.key);
+
+  async function login(){
+
+    const {error} =
+    await client.auth.signInWithPassword({
+      email:document.getElementById("email").value,
+      password:document.getElementById("password").value
+    });
+
+    if(error){
+      alert(error.message);
+      return;
+    }
+
+    document.getElementById("login").style.display="none";
+    document.getElementById("panel").style.display="block";
+
+    loadSpots();
+  }
+
+  async function addSpot(){
+
+    const {error} =
+    await client.from("map_spots").insert({
+      building_name:document.getElementById("name").value,
+      explanation:document.getElementById("explanation").value,
+      latitude:Number(document.getElementById("latitude").value),
+      longitude:Number(document.getElementById("longitude").value)
+    });
+
+    if(error){
+      alert(error.message);
+      return;
+    }
+
+    loadSpots();
+  }
+
+  async function loadSpots(){
+
+    const {data,error} =
+    await client
+      .from("map_spots")
+      .select("*")
+      .order("created_at",{ascending:false});
+
+    if(error){
+      alert(error.message);
+      return;
+    }
+
+    document.getElementById("list").innerHTML =
+    (data || []).map(spot =>
+      "<p>" +
+      (spot.building_name || "") +
+      " <button onclick=\"deleteSpot('" +
+      spot.id +
+      "')\">削除</button></p>"
+    ).join("");
+  }
+
+  async function deleteSpot(id){
+
+    if(!confirm("削除しますか？")) return;
+
+    const {error} =
+    await client
+      .from("map_spots")
+      .delete()
+      .eq("id",id);
+
+    if(error){
+      alert(error.message);
+      return;
+    }
+
+    loadSpots();
+  }
+}
+</script>
+
+</body>
+</html>
