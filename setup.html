@@ -1,0 +1,54 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>薬物ダメ絶対マップ 初期設定</title>
+<style>
+body{font-family:sans-serif;max-width:600px;margin:30px auto;padding:20px}
+input{width:100%;box-sizing:border-box;padding:12px;margin:8px 0}
+button{padding:12px 20px}
+</style>
+</head>
+<body>
+
+<h2>薬物ダメ絶対マップ 初期設定</h2>
+
+<p>SupabaseのProject URLとPublishable keyを入力してください。</p>
+
+<input id="url" placeholder="https://xxxx.supabase.co">
+<input id="key" placeholder="sb_publishable_...">
+
+<button onclick="save()">保存してマップへ</button>
+
+<p id="msg"></p>
+
+<script>
+function save(){
+
+  const projectUrl =
+    document.getElementById("url").value.trim();
+
+  const publishableKey =
+    document.getElementById("key").value.trim();
+
+  if(!projectUrl || !publishableKey){
+    document.getElementById("msg").textContent =
+      "両方入力してください";
+    return;
+  }
+
+  localStorage.setItem(
+    "drugMapConfig",
+    JSON.stringify({
+      url: projectUrl,
+      key: publishableKey
+    })
+  );
+
+  location.href = "index.html";
+}
+</script>
+
+</body>
+</html>
