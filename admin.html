@@ -4,31 +4,12 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <title>薬物ダメ絶対マップ 管理画面</title>
-
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
-
 <style>
-body{
-  font-family:sans-serif;
-  max-width:900px;
-  margin:auto;
-  padding:15px;
-}
-input,textarea,button{
-  box-sizing:border-box;
-  width:100%;
-  padding:10px;
-  margin:5px 0;
-}
-#map{
-  height:400px;
-  margin:10px 0;
-}
-.item{
-  border:1px solid #ccc;
-  padding:10px;
-  margin:8px 0;
-}
+body{font-family:sans-serif;max-width:900px;margin:auto;padding:15px}
+input,textarea,button{box-sizing:border-box;width:100%;padding:10px;margin:5px 0}
+#map{height:400px;margin:10px 0}
+.item{border:1px solid #ccc;padding:10px;margin:8px 0}
 </style>
 </head>
 
@@ -37,25 +18,25 @@ input,textarea,button{
 <h2>☠️ 薬物ダメ絶対マップ 管理画面</h2>
 
 <div id="login">
-  <input id="email" placeholder="メールアドレス">
-  <input id="password" type="password" placeholder="パスワード">
-  <button onclick="login()">ログイン</button>
+<input id="email" type="email" placeholder="メールアドレス">
+<input id="password" type="password" placeholder="パスワード">
+<button id="loginBtn">ログイン</button>
 </div>
 
 <div id="admin" style="display:none">
 
-  <h3>地点を追加</h3>
+<h3>地点を追加</h3>
 
-  <input id="building_name" placeholder="建物名・施設名">
-  <textarea id="explanation" placeholder="説明"></textarea>
+<input id="building_name" placeholder="建物名">
+<textarea id="explanation" placeholder="説明"></textarea>
 
-  <p>地図をクリックして場所を指定してください</p>
-  <div id="map"></div>
+<p>地図をクリックして場所を指定</p>
+<div id="map"></div>
 
-  <button onclick="addSpot()">この場所を登録</button>
+<button id="addBtn">この場所を登録</button>
 
-  <h3>登録済み</h3>
-  <div id="spots"></div>
+<h3>登録済み</h3>
+<div id="spots"></div>
 
 </div>
 
@@ -63,166 +44,178 @@ input,textarea,button{
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 
 <script>
+const config = JSON.parse(
+  localStorage.getItem("drugMapConfig") || "null"
+);
 
-const config =
-JSON.parse(localStorage.getItem("drugMapConfig") || "null");
+if (!config  !config.url  !config.key) {
+  alert("Supabase設定がありません。先にsetup.htmlを開いてください。");
+} else {
 
-if(!config){
-  alert("先に公開サイトでSupabase設定をしてください");
-}
+  const supabaseUrl = config.url
+    .trim()
+    .replace(/\/+$/, "");
 
-const client =
-config ? supabase.createClient(config.url,config.key) : null;
+  const supabaseKey = config.key.trim();
 
-let map;
-let selectedLat = null;
-let selectedLng = null;
-let marker = null;
+  const client = window.supabase.createClient(
+    supabaseUrl,
+    supabaseKey
+  );
 
-async function login(){
+  let map = null;
+  let marker = null;
+  let selectedLat = null;
+  let selectedLng = null;
 
-  const {error} =
-  await client.auth.signInWithPassword({
-    email:document.getElementById("email").value,
-    password:document.getElementById("password").value
-  });
+  document.getElementById("loginBtn").onclick = async function(){
 
-  if(error){
-    alert(error.message);
-    return;
-  }
+    const email =
+      document.getElementById("email").value.trim();
 
-  document.getElementById("login").style.display="none";
-  document.getElementById("admin").style.display="block";
+    const password =
+      document.getElementById("password").value;
 
-  initMap();
-  loadSpots();
-}
-
-function initMap(){
-
-  map = L.map("map").setView([34.7,135.5],9);
-
-  L.tileLayer(
-    "https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png",
-    {attribution:"© OpenStreetMap"}
-  ).addTo(map);
-
-  map.on("click",function(e){
-
-    selectedLat = e.latlng.lat;
-    selectedLng = e.latlng.lng;
-
-    if(marker){
-      marker.setLatLng(e.latlng);
-    }else{
-      marker = L.marker(e.latlng).addTo(map);
+    if (!email || !password) {
+      alert("メールアドレスとパスワードを入力してください");
+      return;
     }
 
-  });
-}
+    const result =
+      await client.auth.signInWithPassword({
+        email: email,
+        password: password
+      });
 
-async function addSpot(){
+    if (result.error) {
+      alert(result.error.message);
+      return;
+    }
 
-  if(selectedLat === null){
-    alert("先に地図をクリックして場所を指定してください");
-    return;
+    document.getElementById("login").style.display = "none";
+    document.getElementById("admin").style.display = "block";
+
+    initMap();
+    loadSpots();
+  };
+
+  function initMap(){
+
+    map = L.map("map").setView([34.7,135.5],9);
+
+    L.tileLayer(
+      "https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png",
+      {attribution:"© OpenStreetMap"}
+    ).addTo(map);
+
+    map.on("click",function(e){
+
+      selectedLat = e.latlng.lat;
+      selectedLng = e.latlng.lng;
+
+      if(marker){
+        marker.setLatLng(e.latlng);
+      }else{
+        marker = L.marker(e.latlng).addTo(map);
+      }
+    });
   }
 
-  const name =
-  document.getElementById("building_name").value;
+  document.getElementById("addBtn").onclick = async function(){
 
-  const explanation =
-  document.getElementById("explanation").value;
+    if(selectedLat === null){
+      alert("先に地図をクリックしてください");
+      return;
+    }
 
-  const {error} =
-  await client
-  .from("map_spots")
-  .insert({
-    building_name:name,
-    explanation:explanation,
-    latitude:selectedLat,
-    longitude:selectedLng
-  });
+    const {error} = await client
+      .from("map_spots")
+      .insert({
+        building_name:
+          document.getElementById("building_name").value,
+        explanation:
+          document.getElementById("explanation").value,
+        latitude:selectedLat,
+        longitude:selectedLng
+      });
 
-  if(error){
-    alert(error.message);
-    return;
+    if(error){
+      alert(error.message);
+      return;
+    }
+
+    alert("登録しました");
+
+    document.getElementById("building_name").value="";
+    document.getElementById("explanation").value="";
+
+    selectedLat=null;
+    selectedLng=null;
+
+    if(marker){
+      map.removeLayer(marker);
+      marker=null;
+    }
+
+    loadSpots();
+  };
+
+  async function loadSpots(){
+
+    const {data,error} = await client
+      .from("map_spots")
+      .select("*")
+      .order("created_at",{ascending:false});
+
+    if(error){
+      alert(error.message);
+      return;
+    }
+
+    document.getElementById("spots").innerHTML =
+      (data || []).map(function(spot){
+
+        return `
+          <div class="item">
+            <b>${escapeHtml(spot.building_name || "")}</b><br>
+            ${escapeHtml(spot.explanation || "")}<br>
+            <button onclick="deleteSpot('${spot.id}')">削除</button>
+          </div>
+`;
+
+      }).join("");
   }
 
-  alert("登録しました");
+  window.deleteSpot = async function(id){
 
-  document.getElementById("building_name").value="";
-  document.getElementById("explanation").value="";
+    if(!confirm("この地点を削除しますか？")) return;
 
-  selectedLat=null;
-  selectedLng=null;
+    const {error} = await client
+      .from("map_spots")
+      .delete()
+      .eq("id",id);
 
-  if(marker){
-    map.removeLayer(marker);
-    marker=null;
+    if(error){
+      alert(error.message);
+      return;
+    }
+
+    loadSpots();
+  };
+
+  function escapeHtml(text){
+
+    return String(text).replace(/[&<>"']/g,function(c){
+      return {
+        "&":"&amp;",
+        "<":"&lt;",
+        ">":"&gt;",
+        '"':"&quot;",
+        "'":"&#39;"
+      }[c];
+    });
   }
-
-  loadSpots();
 }
-
-async function loadSpots(){
-
-  const {data,error} =
-  await client
-  .from("map_spots")
-  .select("*")
-  .order("created_at",{ascending:false});
-
-  if(error){
-    alert(error.message);
-    return;
-  }
-
-  document.getElementById("spots").innerHTML =
-  (data || []).map(spot => `
-    <div class="item">
-      <b>${escapeHtml(spot.building_name || "")}</b>
-      <br>
-      ${escapeHtml(spot.explanation || "")}
-      <br>
-      <button onclick="deleteSpot('${spot.id}')">削除</button>
-    </div>
-  `).join("");
-}
-
-async function deleteSpot(id){
-
-  if(!confirm("この地点を削除しますか？")) return;
-
-  const {error} =
-  await client
-  .from("map_spots")
-  .delete()
-  .eq("id",id);
-
-  if(error){
-    alert(error.message);
-    return;
-  }
-
-  loadSpots();
-}
-
-function escapeHtml(text){
-
-  return String(text).replace(/[&<>"']/g,function(c){
-    return {
-      "&":"&amp;",
-      "<":"&lt;",
-      ">":"&gt;",
-      '"':"&quot;",
-      "'":"&#39;"
-    }[c];
-  });
-
-}
-
 </script>
 
 </body>
