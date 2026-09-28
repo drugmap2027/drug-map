@@ -1,92 +1,125 @@
 <!DOCTYPE html>
 <html lang="ja">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width,initial-scale=1">
-<title>☠️ 薬物ダメ絶対マップ ☠️</title>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
-<link rel="stylesheet"
-href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
+  <title>ダメゼッタイマップ</title>
 
-<style>
-body{margin:0;font-family:sans-serif}
-h1{text-align:center;font-size:20px;margin:10px 0 3px}
-.sub{text-align:center;font-size:12px;margin-bottom:5px}
-#map{height:calc(100vh - 65px)}
-</style>
+  <link
+    rel="stylesheet"
+    href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
+  />
+
+  <style>
+    body {
+      margin: 0;
+      font-family: sans-serif;
+    }
+
+    h1 {
+      text-align: center;
+      margin-bottom: 5px;
+    }
+
+    .delete-link {
+      text-align: center;
+      margin-bottom: 10px;
+    }
+
+    .delete-link a {
+      display: inline-block;
+      padding: 8px 16px;
+      background: #333;
+      color: white;
+      text-decoration: none;
+      border-radius: 6px;
+    }
+
+    #map {
+      height: 80vh;
+    }
+  </style>
 </head>
 
 <body>
 
-<h1>☠️ 薬物ダメ絶対マップ ☠️</h1>
-<div class="sub">削除依頼はこちら → URL</div>
-<div id="map"></div>
+  <h1>ダメゼッタイマップ</h1>
 
-<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <div class="delete-link">
+    <a
+      href="https://signal.me/#eu/oWFpw_T5syPhiVMBTOz9zco5PhBHzUPZzRTmnMXBP0kro6RGx9hOq4bf9iU5WYoM"
+      target="_blank"
+      rel="noopener noreferrer"
+    >
+      URL
+    </a>
+  </div>
 
-<script>
-const config = JSON.parse(
-  localStorage.getItem("drugMapConfig") || "null"
-);
+  <div id="map"></div>
 
-if (!config) {
-  location.href = "setup.html";
-} else {
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 
-  const supabaseClient =
-    supabase.createClient(config.url, config.key);
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 
-  const map = L.map("map").setView([34.7,135.5],9);
+  <script>
 
-  L.tileLayer(
-    "https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png",
-    {
-      attribution:"© OpenStreetMap"
-    }
-  ).addTo(map);
+    const SUPABASE_URL = "https://mlutpkvjhlbotiqfkrya.supabase.co";
+    const SUPABASE_KEY = "sb_publishable_hZ9yJ9ws29oWYSM8y_OJYA_319N7pVc";
 
-  supabaseClient
-    .from("map_spots")
-    .select("*")
-    .then(({data,error}) => {
+    const supabaseClient =
+      window.supabase.createClient(
+        SUPABASE_URL,
+        SUPABASE_KEY
+      );
 
-      if(error){
-        alert(error.message);
+    const map = L.map('map').setView(
+      [35.6812, 139.7671],
+      5
+    );
+
+    L.tileLayer(
+      'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',
+      {
+        attribution: '&copy; OpenStreetMap contributors'
+      }
+    ).addTo(map);
+
+    async function loadFacilities() {
+
+      const { data, error } =
+        await supabaseClient
+          .from('facilities')
+          .select('*');
+
+      if (error) {
+        console.error(error);
         return;
       }
 
-      (data || []).forEach(spot => {
+      data.forEach(facility => {
 
-        L.marker([
-          spot.latitude,
-          spot.longitude
-        ])
-        .addTo(map)
-        .bindPopup(
-          "<b>" +
-          escapeHtml(spot.building_name || "") +
-          "</b><br>" +
-          escapeHtml(spot.explanation || "")
-        );
+        const marker = L.marker([
+          facility.latitude,
+          facility.longitude
+        ]).addTo(map);
+
+        marker.bindPopup(`
+          <strong>${facility.building_name}</strong><br><br>
+
+          <b>住所：</b>${facility.address || ''}<br>
+          <b>名前：</b>${facility.name || ''}<br>
+          <b>電話番号：</b>${facility.phone || ''}<br>
+          <b>ID：</b>${facility.facility_id || ''}<br>
+          <b>説明：</b>${facility.description || ''}
+        `);
 
       });
+    }
 
-    });
-}
+    loadFacilities();
 
-function escapeHtml(text){
-  return String(text).replace(/[&<>"']/g,function(c){
-    return {
-      "&":"&amp;",
-      "<":"&lt;",
-      ">":"&gt;",
-      '"':"&quot;",
-      "'":"&#39;"
-    }[c];
-  });
-}
-</script>
+  </script>
 
 </body>
 </html>
