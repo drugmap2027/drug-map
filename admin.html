@@ -1,261 +1,227 @@
-GITHUB Admin.html
-
-
 <!DOCTYPE html>
 <html lang="ja">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width,initial-scale=1">
-<title>薬物ダメ絶対マップ 管理画面</title>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
-<link rel="stylesheet"
-href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
+  <title>ダメゼッタイマップ 管理画面</title>
 
-<style>
-body{font-family:sans-serif;max-width:900px;margin:auto;padding:15px}
-input,textarea,button{box-sizing:border-box;width:100%;padding:10px;margin:5px 0}
-#map{height:400px;margin:10px 0}
-.item{border:1px solid #ccc;padding:10px;margin:8px 0}
-</style>
+  <style>
+    body {
+      font-family: sans-serif;
+      max-width: 600px;
+      margin: 0 auto;
+      padding: 20px;
+    }
+
+    h1 {
+      text-align: center;
+    }
+
+    input,
+    textarea,
+    button {
+      width: 100%;
+      box-sizing: border-box;
+      padding: 12px;
+      margin-top: 8px;
+      margin-bottom: 15px;
+      font-size: 16px;
+    }
+
+    button {
+      background: #222;
+      color: white;
+      border: none;
+      border-radius: 6px;
+    }
+
+    #admin {
+      display: none;
+    }
+  </style>
 </head>
 
 <body>
 
-<h2>☠️ 薬物ダメ絶対マップ 管理画面</h2>
+  <h1>ダメゼッタイマップ<br>管理画面</h1>
 
-<div id="login">
-<input id="email" type="email" placeholder="メールアドレス">
-<input id="password" type="password" placeholder="パスワード">
-<button id="loginBtn">ログイン</button>
-</div>
+  <div id="login">
 
-<div id="admin" style="display:none">
+    <h2>管理者ログイン</h2>
 
-<h3>地点を追加</h3>
+    <label>メールアドレス</label>
+    <input
+      type="email"
+      id="email"
+      placeholder="メールアドレス"
+    >
 
-<input id="building_name" placeholder="建物名">
-<textarea id="explanation" placeholder="説明"></textarea>
+    <label>パスワード</label>
+    <input
+      type="password"
+      id="password"
+      placeholder="パスワード"
+    >
 
-<p>地図をクリックして場所を指定してください</p>
-<div id="map"></div>
+    <button onclick="login()">
+      ログイン
+    </button>
 
-<button id="addBtn">この場所を登録</button>
+    <p id="message"></p>
 
-<h3>登録済み</h3>
-<div id="spots"></div>
-
-</div>
-
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
-
-<script>
-
-/* ===== Supabase設定 ===== */
-
-const SUPABASE_URL =
-"https://nxdlfpelnyxuflrabqhd.supabase.co";
-
-const SUPABASE_KEY =
-"sb_publishable_Z6xyj-DmmdaibLzPWKlXEA_m1br5tn2";
-
-/* ======================== */
-
-const client = window.supabase.createClient(
-  SUPABASE_URL,
-  SUPABASE_KEY
-);
-
-let map = null;
-let marker = null;
-let selectedLat = null;
-let selectedLng = null;
+  </div>
 
 
-/* ログイン */
+  <div id="admin">
 
-document.getElementById("loginBtn").onclick =
-async function(){
+    <h2>施設管理</h2>
 
-  const email =
-    document.getElementById("email").value.trim();
+    <p>管理者としてログインしています。</p>
 
-  const password =
-    document.getElementById("password").value;
+    <button onclick="logout()">
+      ログアウト
+    </button>
 
-  if(!email || !password){
-    alert("メールアドレスとパスワードを入力してください");
-    return;
-  }
+    <hr>
 
-  const {error} =
-    await client.auth.signInWithPassword({
-      email:email,
-      password:password
-    });
+    <h3>施設を追加</h3>
 
-  if(error){
-    alert(error.message);
-    return;
-  }
+    <label>建物名</label>
+    <input id="building_name">
 
-  document.getElementById("login").style.display="none";
-  document.getElementById("admin").style.display="block";
+    <label>住所</label>
+    <input id="address">
 
-  initMap();
-  loadSpots();
-};
+    <label>名前</label>
+    <input id="name">
+
+    <label>電話番号</label>
+    <input id="phone">
+
+    <label>各種ID</label>
+    <input id="facility_id">
+
+    <label>説明</label>
+    <textarea id="description"></textarea>
+
+    <button onclick="addFacility()">
+      施設を登録
+    </button>
+
+  </div>
 
 
-/* 地図 */
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 
-function initMap(){
+  <script>
 
-  map = L.map("map").setView([34.7,135.5],9);
+    const SUPABASE_URL =
+      "https://mlutpkvjhlbotiqfkrya.supabase.co";
 
-  L.tileLayer(
-    "https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png",
-    {
-      attribution:"© OpenStreetMap"
+    const SUPABASE_KEY =
+      "sb_publishable_hZ9yJ9ws29oWYSM8y_OJYA_319N7pVc";
+
+
+    const supabaseClient =
+      window.supabase.createClient(
+        SUPABASE_URL,
+        SUPABASE_KEY
+      );
+
+
+    async function login() {
+
+      const email =
+        document.getElementById("email").value;
+
+      const password =
+        document.getElementById("password").value;
+
+
+      const { data, error } =
+        await supabaseClient.auth.signInWithPassword({
+          email: email,
+          password: password
+        });
+
+
+      if (error) {
+
+        document.getElementById("message").textContent =
+          "ログインできませんでした。";
+
+        console.error(error);
+
+        return;
+      }
+
+
+      document.getElementById("login").style.display =
+        "none";
+
+      document.getElementById("admin").style.display =
+        "block";
     }
-  ).addTo(map);
 
-  map.on("click",function(e){
 
-    selectedLat = e.latlng.lat;
-    selectedLng = e.latlng.lng;
+    async function logout() {
 
-    if(marker){
-      marker.setLatLng(e.latlng);
-    }else{
-      marker = L.marker(e.latlng).addTo(map);
+      await supabaseClient.auth.signOut();
+
+      location.reload();
     }
 
-  });
-}
+
+    async function addFacility() {
+
+      const building_name =
+        document.getElementById("building_name").value;
+
+      const address =
+        document.getElementById("address").value;
+
+      const name =
+        document.getElementById("name").value;
+
+      const phone =
+        document.getElementById("phone").value;
+
+      const facility_id =
+        document.getElementById("facility_id").value;
+
+      const description =
+        document.getElementById("description").value;
 
 
-/* 登録 */
-
-document.getElementById("addBtn").onclick =
-async function(){
-
-  if(selectedLat === null){
-    alert("先に地図をクリックしてください");
-    return;
-  }
-
-  const name =
-    document.getElementById("building_name").value;
-
-  const explanation =
-    document.getElementById("explanation").value;
-
-  const {error} =
-    await client
-    .from("map_spots")
-    .insert({
-      building_name:name,
-      explanation:explanation,
-      latitude:selectedLat,
-      longitude:selectedLng
-    });
-
-  if(error){
-    alert(error.message);
-    return;
-  }
-
-  alert("登録しました");
-
-  document.getElementById("building_name").value="";
-  document.getElementById("explanation").value="";
-
-  selectedLat=null;
-  selectedLng=null;
-
-  if(marker){
-    map.removeLayer(marker);
-    marker=null;
-  }
-
-  loadSpots();
-};
+      const { error } =
+        await supabaseClient
+          .from("facilities")
+          .insert({
+            building_name,
+            address,
+            name,
+            phone,
+            facility_id,
+            description
+          });
 
 
-/* 一覧 */
+      if (error) {
 
-async function loadSpots(){
+        alert(
+          "登録に失敗しました。\n" +
+          error.message
+        );
 
-  const {data,error} =
-    await client
-    .from("map_spots")
-    .select("*")
-    .order("created_at",{ascending:false});
-
-  if(error){
-    alert(error.message);
-    return;
-  }
-
-  document.getElementById("spots").innerHTML =
-    (data || []).map(function(spot){
-
-      return `
-      <div class="item">
-        <b>${escapeHtml(spot.building_name || "")}</b><br>
-        ${escapeHtml(spot.explanation || "")}<br>
-        <button onclick="deleteSpot('${spot.id}')">
-        削除
-        </button>
-      </div>`;
-
-    }).join("");
-}
+        return;
+      }
 
 
-/* 削除 */
+      alert("施設を登録しました。");
+    }
 
-window.deleteSpot = async function(id){
-
-  if(!confirm("この地点を削除しますか？")){
-    return;
-  }
-
-  const {error} =
-    await client
-    .from("map_spots")
-    .delete()
-    .
-eq("id",id);
-
-  if(error){
-    alert(error.message);
-    return;
-  }
-
-  loadSpots();
-};
-
-
-/* HTMLエスケープ */
-
-function escapeHtml(text){
-
-  return String(text).replace(/[&<>"']/g,function(c){
-
-    return {
-      "&":"&amp;",
-      "<":"&lt;",
-      ">":"&gt;",
-      '"':"&quot;",
-      "'":"&#39;"
-    }[c];
-
-  });
-}
-
-</script>
+  </script>
 
 </body>
 </html>
