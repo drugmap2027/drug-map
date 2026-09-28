@@ -1,15 +1,32 @@
 <!DOCTYPE html>
 <html lang="ja">
+
 <head>
+
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+  <meta
+    name="viewport"
+    content="width=device-width, initial-scale=1.0"
+  >
 
   <title>ダメゼッタイマップ 管理画面</title>
 
+
+  <!-- Leaflet -->
+
+  <link
+    rel="stylesheet"
+    href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
+  >
+
+
   <style>
+
     * {
       box-sizing: border-box;
     }
+
 
     body {
       margin: 0;
@@ -19,18 +36,23 @@
       color: #222;
     }
 
+
     .container {
-      max-width: 700px;
+      max-width: 750px;
       margin: 0 auto;
     }
 
+
     h1 {
       text-align: center;
+      margin-bottom: 25px;
     }
 
+
     h2 {
-      margin-top: 30px;
+      margin-top: 0;
     }
+
 
     .card {
       background: white;
@@ -40,11 +62,13 @@
       box-shadow: 0 2px 8px rgba(0,0,0,0.08);
     }
 
+
     label {
       display: block;
       margin-top: 15px;
       font-weight: bold;
     }
+
 
     input,
     textarea {
@@ -56,15 +80,18 @@
       font-size: 16px;
     }
 
+
     textarea {
-      min-height: 120px;
+      min-height: 110px;
       resize: vertical;
     }
 
+
     button {
       width: 100%;
+      min-height: 46px;
       padding: 12px;
-      margin-top: 15px;
+      margin-top: 12px;
       border: none;
       border-radius: 6px;
       background: #222;
@@ -73,25 +100,65 @@
       cursor: pointer;
     }
 
+
     button:hover {
       opacity: 0.85;
     }
+
+
+    .search-row {
+      display: flex;
+      gap: 8px;
+      align-items: end;
+    }
+
+
+    .search-row input {
+      flex: 1;
+    }
+
+
+    .search-row button {
+      width: 110px;
+      margin-top: 6px;
+    }
+
 
     .logout {
       background: #777;
     }
 
+
     .edit {
       background: #1976d2;
     }
+
 
     .delete {
       background: #d32f2f;
     }
 
+
     .cancel {
       background: #777;
     }
+
+
+    #map {
+      width: 100%;
+      height: 350px;
+      margin-top: 15px;
+      border-radius: 8px;
+      overflow: hidden;
+    }
+
+
+    .map-help {
+      margin-top: 10px;
+      color: #555;
+      font-size: 14px;
+    }
+
 
     .facility {
       border: 1px solid #ddd;
@@ -100,41 +167,66 @@
       margin-top: 15px;
     }
 
+
     .facility strong {
       font-size: 18px;
     }
 
-    .message {
-      padding: 10px;
-      margin-top: 10px;
-      border-radius: 6px;
-      background: #eee;
+
+    .facility p {
+      margin: 7px 0;
     }
+
 
     #admin {
       display: none;
     }
 
+
     #editArea {
       display: none;
     }
+
+
+    .message {
+      margin-top: 10px;
+      padding: 10px;
+      border-radius: 6px;
+      background: #eee;
+    }
+
   </style>
+
 </head>
+
 
 <body>
 
+
 <div class="container">
 
-  <h1>ダメゼッタイマップ<br>管理画面</h1>
+
+  <h1>
+    ダメゼッタイマップ<br>
+    管理画面
+  </h1>
 
 
-  <!-- ログイン画面 -->
+  <!-- =========================
+       ログイン
+  ========================== -->
 
-  <div id="login" class="card">
+  <div
+    id="login"
+    class="card"
+  >
 
     <h2>管理者ログイン</h2>
 
-    <label>メールアドレス</label>
+
+    <label>
+      メールアドレス
+    </label>
 
     <input
       type="email"
@@ -142,7 +234,10 @@
       placeholder="メールアドレス"
     >
 
-    <label>パスワード</label>
+
+    <label>
+      パスワード
+    </label>
 
     <input
       type="password"
@@ -150,24 +245,38 @@
       placeholder="パスワード"
     >
 
-    <button onclick="login()">
+
+    <button
+      onclick="login()"
+    >
       ログイン
     </button>
 
-    <div id="loginMessage"></div>
+
+    <div
+      id="loginMessage"
+      class="message"
+    ></div>
 
   </div>
 
 
-  <!-- 管理画面 -->
+
+  <!-- =========================
+       管理画面
+  ========================== -->
 
   <div id="admin">
+
+
+    <!-- ログアウト -->
 
     <div class="card">
 
       <p>
         管理者としてログインしています。
       </p>
+
 
       <button
         class="logout"
@@ -179,13 +288,21 @@
     </div>
 
 
-    <!-- 施設追加 -->
+
+    <!-- =========================
+         新規施設
+    ========================== -->
 
     <div class="card">
 
-      <h2>施設を追加</h2>
+      <h2>
+        施設を追加
+      </h2>
 
-      <label>建物名</label>
+
+      <label>
+        建物名
+      </label>
 
       <input
         type="text"
@@ -194,34 +311,88 @@
       >
 
 
-      <label>住所</label>
+
+      <label>
+        郵便番号
+      </label>
+
+
+      <div class="search-row">
+
+        <input
+          type="text"
+          id="postal_code"
+          placeholder="例：530-0001"
+          inputmode="numeric"
+        >
+
+
+        <button
+          type="button"
+          onclick="searchPostalCode()"
+        >
+          検索
+        </button>
+
+      </div>
+
+
+      <div
+        id="postalMessage"
+        class="message"
+      ></div>
+
+
+
+      <label>
+        住所
+      </label>
 
       <input
         type="text"
         id="address"
-        placeholder="例：大阪府架空市テスト町1-1-1"
+        placeholder="住所"
       >
 
 
-      <label>名前</label>
+
+      <div id="map"></div>
+
+
+      <p class="map-help">
+        📍 ピンを指でドラッグして、登録したい場所に移動してください。
+      </p>
+
+
+
+      <label>
+        名前
+      </label>
 
       <input
         type="text"
         id="name"
-        placeholder="例：架空 太郎"
+        placeholder="名前"
       >
 
 
-      <label>電話番号</label>
+
+      <label>
+        電話番号
+      </label>
 
       <input
         type="text"
         id="phone"
-        placeholder="例：000-0000-0000"
+        placeholder="電話番号"
+        inputmode="tel"
       >
 
 
-      <label>各種ID</label>
+
+      <label>
+        各種ID
+      </label>
 
       <input
         type="text"
@@ -230,7 +401,10 @@
       >
 
 
-      <label>説明</label>
+
+      <label>
+        説明
+      </label>
 
       <textarea
         id="description"
@@ -238,23 +412,36 @@
       ></textarea>
 
 
-      <button onclick="addFacility()">
-        施設を登録
+
+      <button
+        onclick="addFacility()"
+      >
+        この位置で施設を登録
       </button>
 
-      <div id="addMessage"></div>
+
+      <div
+        id="addMessage"
+        class="message"
+      ></div>
 
     </div>
 
 
-    <!-- 編集 -->
+
+    <!-- =========================
+         編集
+    ========================== -->
 
     <div
       id="editArea"
       class="card"
     >
 
-      <h2>施設を編集</h2>
+      <h2>
+        施設を編集
+      </h2>
+
 
       <input
         type="hidden"
@@ -262,7 +449,9 @@
       >
 
 
-      <label>建物名</label>
+      <label>
+        建物名
+      </label>
 
       <input
         type="text"
@@ -270,7 +459,33 @@
       >
 
 
-      <label>住所</label>
+
+      <label>
+        郵便番号
+      </label>
+
+      <div class="search-row">
+
+        <input
+          type="text"
+          id="edit_postal_code"
+        >
+
+
+        <button
+          type="button"
+          onclick="searchEditPostalCode()"
+        >
+          検索
+        </button>
+
+      </div>
+
+
+
+      <label>
+        住所
+      </label>
 
       <input
         type="text"
@@ -278,7 +493,19 @@
       >
 
 
-      <label>名前</label>
+
+      <div id="editMap"></div>
+
+
+      <p class="map-help">
+        📍 ピンをドラッグして位置を変更できます。
+      </p>
+
+
+
+      <label>
+        名前
+      </label>
 
       <input
         type="text"
@@ -286,7 +513,10 @@
       >
 
 
-      <label>電話番号</label>
+
+      <label>
+        電話番号
+      </label>
 
       <input
         type="text"
@@ -294,7 +524,10 @@
       >
 
 
-      <label>各種ID</label>
+
+      <label>
+        各種ID
+      </label>
 
       <input
         type="text"
@@ -302,11 +535,15 @@
       >
 
 
-      <label>説明</label>
+
+      <label>
+        説明
+      </label>
 
       <textarea
         id="edit_description"
       ></textarea>
+
 
 
       <button
@@ -327,11 +564,17 @@
     </div>
 
 
-    <!-- 施設一覧 -->
+
+    <!-- =========================
+         施設一覧
+    ========================== -->
 
     <div class="card">
 
-      <h2>登録済み施設</h2>
+      <h2>
+        登録済み施設
+      </h2>
+
 
       <div id="facilityList">
         読み込み中...
@@ -339,20 +582,39 @@
 
     </div>
 
+
   </div>
 
 </div>
 
 
+
+<!-- Leaflet -->
+
+<script
+  src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
+></script>
+
+
+
 <!-- Supabase -->
 
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script
+  src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"
+></script>
+
 
 
 <script>
 
+
+  // =========================
+  // Supabase設定
+  // =========================
+
   const SUPABASE_URL =
     "https://mlutpkvjhlbotiqfkrya.supabase.co";
+
 
   const SUPABASE_KEY =
     "sb_publishable_hZ9yJ9ws29oWYSM8y_OJYA_319N7pVc";
@@ -365,6 +627,68 @@
     );
 
 
+
+  // =========================
+  // 新規登録用の地図
+  // =========================
+
+  const map =
+    L.map("map").setView(
+      [35.6812, 139.7671],
+      5
+    );
+
+
+  L.tileLayer(
+    "https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png",
+    {
+      attribution:
+        "&copy; OpenStreetMap contributors"
+    }
+  ).addTo(map);
+
+
+
+  let marker =
+    L.marker(
+      [35.6812, 139.7671],
+      {
+        draggable: true
+      }
+    ).addTo(map);
+
+
+
+  // =========================
+  // 編集用地図
+  // =========================
+
+  const editMap =
+    L.map("editMap").setView(
+      [35.6812, 139.7671],
+      5
+    );
+
+
+  L.tileLayer(
+    "https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png",
+    {
+      attribution:
+        "&copy; OpenStreetMap contributors"
+    }
+  ).addTo(editMap);
+
+
+  let editMarker =
+    L.marker(
+      [35.6812, 139.7671],
+      {
+        draggable: true
+      }
+    ).addTo(editMap);
+
+
+
   // =========================
   // ログイン
   // =========================
@@ -372,17 +696,26 @@
   async function login() {
 
     const email =
-      document.getElementById("email").value.trim();
+      document.getElementById(
+        "email"
+      ).value.trim();
+
 
     const password =
-      document.getElementById("password").value;
+      document.getElementById(
+        "password"
+      ).value;
 
 
-    const { error } =
-      await supabaseClient.auth.signInWithPassword({
-        email: email,
-        password: password
-      });
+    const {
+      error
+    } =
+      await supabaseClient
+        .auth
+        .signInWithPassword({
+          email,
+          password
+        });
 
 
     if (error) {
@@ -395,6 +728,7 @@
       console.error(error);
 
       return;
+
     }
 
 
@@ -403,14 +737,19 @@
   }
 
 
+
   // =========================
-  // ログイン状態確認
+  // ログイン確認
   // =========================
 
   async function checkLogin() {
 
-    const { data } =
-      await supabaseClient.auth.getUser();
+    const {
+      data
+    } =
+      await supabaseClient
+        .auth
+        .getUser();
 
 
     if (data.user) {
@@ -422,6 +761,7 @@
   }
 
 
+
   // =========================
   // 管理画面表示
   // =========================
@@ -430,17 +770,32 @@
 
     document.getElementById(
       "login"
-    ).style.display = "none";
+    ).style.display =
+      "none";
 
 
     document.getElementById(
       "admin"
-    ).style.display = "block";
+    ).style.display =
+      "block";
+
+
+    setTimeout(
+      () => {
+
+        map.invalidateSize();
+
+        editMap.invalidateSize();
+
+      },
+      300
+    );
 
 
     loadFacilities();
 
   }
+
 
 
   // =========================
@@ -449,15 +804,172 @@
 
   async function logout() {
 
-    await supabaseClient.auth.signOut();
+    await supabaseClient
+      .auth
+      .signOut();
+
 
     location.reload();
 
   }
 
 
+
   // =========================
-  // 施設追加
+  // 郵便番号検索
+  // =========================
+
+  async function searchPostalCode() {
+
+    const input =
+      document.getElementById(
+        "postal_code"
+      );
+
+
+    const message =
+      document.getElementById(
+        "postalMessage"
+      );
+
+
+    const postal =
+      input.value
+        .replace(/[^0-9]/g, "");
+
+
+    if (
+      postal.length !== 7
+    ) {
+
+      message.textContent =
+        "郵便番号は7桁で入力してください。";
+
+      return;
+
+    }
+
+
+    message.textContent =
+      "検索しています...";
+
+
+    try {
+
+      const response =
+        await fetch(
+          "https://zipcloud.ibsnet.co.jp/api/search?" +
+          new URLSearchParams({
+            zipcode: postal
+          })
+        );
+
+
+      const result =
+        await response.json();
+
+
+      if (
+        !result.results ||
+        !result.results.length
+      ) {
+
+        message.textContent =
+          "郵便番号が見つかりませんでした。";
+
+        return;
+
+      }
+
+
+      const r =
+        result.results[0];
+
+
+      const address =
+        r.address1 +
+        r.address2 +
+        r.address3;
+
+
+      document.getElementById(
+        "address"
+      ).value =
+        address;
+
+
+      /*
+       * 郵便番号で取得した住所を
+       * OpenStreetMapで検索
+       */
+
+      const geoResponse =
+        await fetch(
+          "https://nominatim.openstreetmap.org/search?" +
+          new URLSearchParams({
+            q: address,
+            format: "json",
+            limit: "1",
+            countrycodes: "jp"
+          })
+        );
+
+
+      const geo =
+        await geoResponse.json();
+
+
+      if (
+        !geo.length
+      ) {
+
+        message.textContent =
+          "住所は取得できましたが、地図上の位置を取得できませんでした。ピンを手動で移動してください。";
+
+        return;
+
+      }
+
+
+      const lat =
+        Number(geo[0].lat);
+
+
+      const lon =
+        Number(geo[0].lon);
+
+
+      map.setView(
+        [lat, lon],
+        15
+      );
+
+
+      marker.setLatLng(
+        [lat, lon]
+      );
+
+
+      message.textContent =
+        "位置を移動しました。必要なら📍を指で動かしてください。";
+
+
+    } catch (error) {
+
+      console.error(error);
+
+
+      message.textContent =
+        "検索中にエラーが発生しました。";
+
+    }
+
+  }
+
+
+
+  // =========================
+  // 新規施設追加
   // =========================
 
   async function addFacility() {
@@ -465,6 +977,12 @@
     const building_name =
       document.getElementById(
         "building_name"
+      ).value.trim();
+
+
+    const postal_code =
+      document.getElementById(
+        "postal_code"
       ).value.trim();
 
 
@@ -498,46 +1016,103 @@
       ).value.trim();
 
 
+    const position =
+      marker.getLatLng();
+
+
     if (!building_name) {
 
-      alert("建物名を入力してください。");
+      alert(
+        "建物名を入力してください。"
+      );
 
       return;
 
     }
 
 
-    const { error } =
+    if (!address) {
+
+      alert(
+        "住所を入力してください。"
+      );
+
+      return;
+
+    }
+
+
+    const {
+      error
+    } =
       await supabaseClient
         .from("facilities")
         .insert({
+
           building_name,
+
+          postal_code,
+
           address,
+
           name,
+
           phone,
+
           facility_id,
-          description
+
+          description,
+
+          latitude:
+            position.lat,
+
+          longitude:
+            position.lng
+
         });
 
 
     if (error) {
 
       alert(
-        "登録に失敗しました。\n" +
+        "登録に失敗しました。\n\n" +
         error.message
       );
 
       console.error(error);
 
       return;
+
     }
 
 
-    alert("施設を登録しました。");
+    alert(
+      "施設を登録しました。"
+    );
 
+
+    clearForm();
+
+
+    loadFacilities();
+
+  }
+
+
+
+  // =========================
+  // 入力クリア
+  // =========================
+
+  function clearForm() {
 
     document.getElementById(
       "building_name"
+    ).value = "";
+
+
+    document.getElementById(
+      "postal_code"
     ).value = "";
 
 
@@ -566,9 +1141,12 @@
     ).value = "";
 
 
-    loadFacilities();
+    document.getElementById(
+      "postalMessage"
+    ).textContent = "";
 
   }
+
 
 
   // =========================
@@ -583,13 +1161,19 @@
       );
 
 
-    const { data, error } =
+    const {
+      data,
+      error
+    } =
       await supabaseClient
         .from("facilities")
         .select("*")
-        .order("id", {
-          ascending: false
-        });
+        .order(
+          "id",
+          {
+            ascending: false
+          }
+        );
 
 
     if (error) {
@@ -600,10 +1184,14 @@
       console.error(error);
 
       return;
+
     }
 
 
-    if (!data || data.length === 0) {
+    if (
+      !data ||
+      data.length === 0
+    ) {
 
       list.innerHTML =
         "登録されている施設はありません。";
@@ -616,80 +1204,95 @@
     list.innerHTML = "";
 
 
-    data.forEach(facility => {
+    data.forEach(
+      facility => {
 
-      const div =
-        document.createElement("div");
-
-
-      div.className = "facility";
-
-
-      div.innerHTML = `
-
-        <strong>
-          ${escapeHtml(
-            facility.building_name || ""
-          )}
-        </strong>
-
-        <p>
-          <b>住所：</b>
-          ${escapeHtml(
-            facility.address || ""
-          )}
-        </p>
-
-        <p>
-          <b>名前：</b>
-          ${escapeHtml(
-            facility.name || ""
-          )}
-        </p>
-
-        <p>
-          <b>電話番号：</b>
-          ${escapeHtml(
-            facility.phone || ""
-          )}
-        </p>
-
-        <p>
-          <b>ID：</b>
-          ${escapeHtml(
-            facility.facility_id || ""
-          )}
-        </p>
-
-        <p>
-          <b>説明：</b>
-          ${escapeHtml(
-            facility.description || ""
-          )}
-        </p>
-
-        <button
-          class="edit"
-          onclick="startEdit(${facility.id})"
-        >
-          編集
-        </button>
-
-        <button
-          class="delete"
-          onclick="deleteFacility(${facility.id})"
-        >
-          削除
-        </button>
-
-      `;
+        const div =
+          document.createElement(
+            "div"
+          );
 
 
-      list.appendChild(div);
+        div.className =
+          "facility";
 
-    });
+
+        div.innerHTML = `
+
+          <strong>
+            ${escapeHtml(
+              facility.building_name
+            )}
+          </strong>
+
+          <p>
+            <b>郵便番号：</b>
+            ${escapeHtml(
+              facility.postal_code
+            )}
+          </p>
+
+          <p>
+            <b>住所：</b>
+            ${escapeHtml(
+              facility.address
+            )}
+          </p>
+
+          <p>
+            <b>名前：</b>
+            ${escapeHtml(
+              facility.name
+            )}
+          </p>
+
+          <p>
+            <b>電話番号：</b>
+            ${escapeHtml(
+              facility.phone
+            )}
+          </p>
+
+          <p>
+            <b>ID：</b>
+            ${escapeHtml(
+              facility.facility_id
+            )}
+          </p>
+
+          <p>
+            <b>説明：</b>
+            ${escapeHtml(
+              facility.description
+            )}
+          </p>
+
+          <button
+            class="edit"
+            onclick="startEdit(${facility.id})"
+          >
+            編集
+          </button>
+
+          <button
+            class="delete"
+            onclick="deleteFacility(${facility.id})"
+          >
+            削除
+          </button>
+
+        `;
+
+
+        list.appendChild(
+          div
+        );
+
+      }
+    );
 
   }
+
 
 
   // =========================
@@ -698,11 +1301,17 @@
 
   async function startEdit(id) {
 
-    const { data, error } =
+    const {
+      data,
+      error
+    } =
       await supabaseClient
         .from("facilities")
         .select("*")
-        .eq("id", id)
+        .eq(
+          "id",
+          id
+        )
         .single();
 
 
@@ -713,18 +1322,26 @@
       );
 
       return;
+
     }
 
 
     document.getElementById(
       "edit_id"
-    ).value = data.id;
+    ).value =
+      data.id;
 
 
     document.getElementById(
       "edit_building_name"
     ).value =
       data.building_name || "";
+
+
+    document.getElementById(
+      "edit_postal_code"
+    ).value =
+      data.postal_code || "";
 
 
     document.getElementById(
@@ -757,9 +1374,48 @@
       data.description || "";
 
 
+    const lat =
+      Number(
+        data.latitude
+      );
+
+
+    const lng =
+      Number(
+        data.longitude
+      );
+
+
+    if (
+      Number.isFinite(lat) &&
+      Number.isFinite(lng)
+    ) {
+
+      editMap.setView(
+        [lat, lng],
+        15
+      );
+
+
+      editMarker.setLatLng(
+        [lat, lng]
+      );
+
+    }
+
+
     document.getElementById(
       "editArea"
-    ).style.display = "block";
+    ).style.display =
+      "block";
+
+
+    setTimeout(
+      () => {
+        editMap.invalidateSize();
+      },
+      300
+    );
 
 
     window.scrollTo({
@@ -768,6 +1424,144 @@
     });
 
   }
+
+
+
+  // =========================
+  // 編集用郵便番号検索
+  // =========================
+
+  async function searchEditPostalCode() {
+
+    const postal =
+      document.getElementById(
+        "edit_postal_code"
+      ).value
+        .replace(/[^0-9]/g, "");
+
+
+    if (
+      postal.length !== 7
+    ) {
+
+      alert(
+        "郵便番号は7桁で入力してください。"
+      );
+
+      return;
+
+    }
+
+
+    try {
+
+      const response =
+        await fetch(
+          "https://zipcloud.ibsnet.co.jp/api/search?" +
+          new URLSearchParams({
+            zipcode: postal
+          })
+        );
+
+
+      const result =
+        await response.json();
+
+
+      if (
+        !result.results ||
+        !result.results.length
+      ) {
+
+        alert(
+          "郵便番号が見つかりませんでした。"
+        );
+
+        return;
+
+      }
+
+
+      const r =
+        result.results[0];
+
+
+      const address =
+        r.address1 +
+        r.address2 +
+        r.address3;
+
+
+      document.getElementById(
+        "edit_address"
+      ).value =
+        address;
+
+
+      const geoResponse =
+        await fetch(
+          "https://nominatim.openstreetmap.org/search?" +
+          new URLSearchParams({
+            q: address,
+            format: "json",
+            limit: "1",
+            countrycodes: "jp"
+          })
+        );
+
+
+      const geo =
+        await geoResponse.json();
+
+
+      if (
+        !geo.length
+      ) {
+
+        alert(
+          "住所は取得できましたが、地図位置は取得できませんでした。ピンを手動で移動してください。"
+        );
+
+        return;
+
+      }
+
+
+      const lat =
+        Number(
+          geo[0].lat
+        );
+
+
+      const lon =
+        Number(
+          geo[0].lon
+        );
+
+
+      editMap.setView(
+        [lat, lon],
+        15
+      );
+
+
+      editMarker.setLatLng(
+        [lat, lon]
+      );
+
+
+    } catch (error) {
+
+      console.error(error);
+
+      alert(
+        "検索中にエラーが発生しました。"
+      );
+
+    }
+
+  }
+
 
 
   // =========================
@@ -785,6 +1579,12 @@
     const building_name =
       document.getElementById(
         "edit_building_name"
+      ).value.trim();
+
+
+    const postal_code =
+      document.getElementById(
+        "edit_postal_code"
       ).value.trim();
 
 
@@ -818,41 +1618,70 @@
       ).value.trim();
 
 
-    const { error } =
+    const position =
+      editMarker.getLatLng();
+
+
+    const {
+      error
+    } =
       await supabaseClient
         .from("facilities")
         .update({
+
           building_name,
+
+          postal_code,
+
           address,
+
           name,
+
           phone,
+
           facility_id,
-          description
+
+          description,
+
+          latitude:
+            position.lat,
+
+          longitude:
+            position.lng
+
         })
-        .eq("id", id);
+        .eq(
+          "id",
+          id
+        );
 
 
     if (error) {
 
       alert(
-        "更新に失敗しました。\n" +
+        "更新に失敗しました。\n\n" +
         error.message
       );
 
       console.error(error);
 
       return;
+
     }
 
 
-    alert("変更しました。");
+    alert(
+      "変更しました。"
+    );
 
 
     cancelEdit();
 
+
     loadFacilities();
 
   }
+
 
 
   // =========================
@@ -863,9 +1692,11 @@
 
     document.getElementById(
       "editArea"
-    ).style.display = "none";
+    ).style.display =
+      "none";
 
   }
+
 
 
   // =========================
@@ -887,32 +1718,41 @@
     }
 
 
-    const { error } =
+    const {
+      error
+    } =
       await supabaseClient
         .from("facilities")
         .delete()
-        .eq("id", id);
+        .eq(
+          "id",
+          id
+        );
 
 
     if (error) {
 
       alert(
-        "削除に失敗しました。\n" +
+        "削除に失敗しました。\n\n" +
         error.message
       );
 
       console.error(error);
 
       return;
+
     }
 
 
-    alert("削除しました。");
+    alert(
+      "削除しました。"
+    );
 
 
     loadFacilities();
 
   }
+
 
 
   // =========================
@@ -921,18 +1761,36 @@
 
   function escapeHtml(value) {
 
-    return String(value)
-      .replaceAll("&", "&amp;")
-      .replaceAll("<", "&lt;")
-      .replaceAll(">", "&gt;")
-      .replaceAll('"', "&quot;")
-      .replaceAll("'", "&#039;");
+    return String(
+      value ?? ""
+    )
+      .replaceAll(
+        "&",
+        "&amp;"
+      )
+      .replaceAll(
+        "<",
+        "&lt;"
+      )
+      .replaceAll(
+        ">",
+        "&gt;"
+      )
+      .replaceAll(
+        '"',
+        "&quot;"
+      )
+      .replaceAll(
+        "'",
+        "&#039;"
+      );
 
   }
 
 
+
   // =========================
-  // 起動時
+  // 起動
   // =========================
 
   checkLogin();
@@ -940,4 +1798,5 @@
 </script>
 
 </body>
+
 </html>
