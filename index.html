@@ -1,125 +1,310 @@
 <!DOCTYPE html>
 <html lang="ja">
+
 <head>
+
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+  <meta
+    name="viewport"
+    content="width=device-width, initial-scale=1.0"
+  >
 
   <title>ダメゼッタイマップ</title>
+
+
+  <!-- Leaflet -->
 
   <link
     rel="stylesheet"
     href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
-  />
+  >
+
 
   <style>
+
+    * {
+      box-sizing: border-box;
+    }
+
+
     body {
       margin: 0;
       font-family: sans-serif;
+      background: #f5f5f5;
     }
+
+
+    header {
+      background: white;
+      padding: 15px;
+      text-align: center;
+    }
+
 
     h1 {
-      text-align: center;
-      margin-bottom: 5px;
+      margin: 5px 0 10px;
+      font-size: 28px;
     }
 
-    .delete-link {
-      text-align: center;
-      margin-bottom: 10px;
-    }
 
-    .delete-link a {
+    .delete-button {
       display: inline-block;
-      padding: 8px 16px;
-      background: #333;
+      padding: 9px 18px;
+      background: #222;
       color: white;
       text-decoration: none;
       border-radius: 6px;
+      font-size: 14px;
     }
 
+
     #map {
-      height: 80vh;
+      width: 100%;
+      height: calc(100vh - 105px);
     }
+
+
+    .popup-title {
+      font-size: 18px;
+      font-weight: bold;
+      margin-bottom: 10px;
+    }
+
+
+    .popup-row {
+      margin-bottom: 6px;
+    }
+
   </style>
+
 </head>
+
 
 <body>
 
-  <h1>ダメゼッタイマップ</h1>
 
-  <div class="delete-link">
-    <a
-      href="https://signal.me/#eu/oWFpw_T5syPhiVMBTOz9zco5PhBHzUPZzRTmnMXBP0kro6RGx9hOq4bf9iU5WYoM"
-      target="_blank"
-      rel="noopener noreferrer"
-    >
-      URL
-    </a>
-  </div>
+<header>
 
-  <div id="map"></div>
+  <h1>
+    ダメゼッタイマップ
+  </h1>
 
-  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 
-  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <a
+    class="delete-button"
+    href="https://signal.me/#eu/oWFpw_T5syPhiVMBTOz9zco5PhBHzUPZzRTmnMXBP0kro6RGx9hOq4bf9iU5WYoM"
+    target="_blank"
+    rel="noopener noreferrer"
+  >
+    URL
+  </a>
 
-  <script>
+</header>
 
-    const SUPABASE_URL = "https://mlutpkvjhlbotiqfkrya.supabase.co";
-    const SUPABASE_KEY = "sb_publishable_hZ9yJ9ws29oWYSM8y_OJYA_319N7pVc";
 
-    const supabaseClient =
-      window.supabase.createClient(
-        SUPABASE_URL,
-        SUPABASE_KEY
-      );
+<div id="map"></div>
 
-    const map = L.map('map').setView(
+
+<!-- Leaflet -->
+
+<script
+  src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js">
+</script>
+
+
+<!-- Supabase -->
+
+<script
+  src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2">
+</script>
+
+
+<script>
+
+
+  // ==========================
+  // Supabase設定
+  // ==========================
+
+  const SUPABASE_URL =
+    "https://mlutpkvjhlbotiqfkrya.supabase.co";
+
+
+  const SUPABASE_KEY =
+    "sb_publishable_hZ9yJ9ws29oWYSM8y_OJYA_319N7pVc";
+
+
+  const supabaseClient =
+    window.supabase.createClient(
+      SUPABASE_URL,
+      SUPABASE_KEY
+    );
+
+
+  // ==========================
+  // 地図
+  // ==========================
+
+  const map =
+    L.map("map").setView(
       [35.6812, 139.7671],
       5
     );
 
-    L.tileLayer(
-      'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',
-      {
-        attribution: '&copy; OpenStreetMap contributors'
-      }
-    ).addTo(map);
 
-    async function loadFacilities() {
+  L.tileLayer(
+    "https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png",
+    {
+      attribution:
+        "&copy; OpenStreetMap contributors"
+    }
+  ).addTo(map);
 
-      const { data, error } =
-        await supabaseClient
-          .from('facilities')
-          .select('*');
 
-      if (error) {
-        console.error(error);
-        return;
-      }
+  // ==========================
+  // HTMLエスケープ
+  // ==========================
 
-      data.forEach(facility => {
+  function escapeHtml(value) {
 
-        const marker = L.marker([
-          facility.latitude,
-          facility.longitude
-        ]).addTo(map);
+    return String(value || "")
+      .replaceAll("&", "&amp;")
+      .replaceAll("<", "&lt;")
+      .replaceAll(">", "&gt;")
+      .replaceAll('"', "&quot;")
+      .replaceAll("'", "&#039;");
 
-        marker.bindPopup(`
-          <strong>${facility.building_name}</strong><br><br>
+  }
 
-          <b>住所：</b>${facility.address || ''}<br>
-          <b>名前：</b>${facility.name || ''}<br>
-          <b>電話番号：</b>${facility.phone || ''}<br>
-          <b>ID：</b>${facility.facility_id || ''}<br>
-          <b>説明：</b>${facility.description || ''}
-        `);
 
-      });
+  // ==========================
+  // 施設を読み込む
+  // ==========================
+
+  async function loadFacilities() {
+
+
+    const {
+      data,
+      error
+    } =
+      await supabaseClient
+        .from("facilities")
+        .select(
+          "id, building_name, address, name, phone, facility_id, description, latitude, longitude"
+        );
+
+
+    if (error) {
+
+      console.error(error);
+
+      alert(
+        "施設情報を読み込めませんでした。"
+      );
+
+      return;
+
     }
 
-    loadFacilities();
 
-  </script>
+    data.forEach(
+      facility => {
+
+
+        // 位置情報がない施設は表示しない
+
+        if (
+          facility.latitude === null ||
+          facility.longitude === null
+        ) {
+
+          return;
+
+        }
+
+
+        const marker =
+          L.marker([
+            facility.latitude,
+            facility.longitude
+          ]).addTo(map);
+
+
+        const popup = `
+
+          <div>
+
+            <div class="popup-title">
+              ${escapeHtml(
+                facility.building_name
+              )}
+            </div>
+
+
+            <div class="popup-row">
+              <b>住所：</b>
+              ${escapeHtml(
+                facility.address
+              )}
+            </div>
+
+
+            <div class="popup-row">
+              <b>名前：</b>
+              ${escapeHtml(
+                facility.name
+              )}
+            </div>
+
+
+            <div class="popup-row">
+              <b>電話番号：</b>
+              ${escapeHtml(
+                facility.phone
+              )}
+            </div>
+
+
+            <div class="popup-row">
+              <b>各種ID：</b>
+              ${escapeHtml(
+                facility.facility_id
+              )}
+            </div>
+
+
+            <div class="popup-row">
+              <b>説明：</b>
+              ${escapeHtml(
+                facility.description
+              )}
+            </div>
+
+          </div>
+
+        `;
+
+
+        marker.bindPopup(popup);
+
+      }
+    );
+
+  }
+
+
+  // ==========================
+  // 実行
+  // ==========================
+
+  loadFacilities();
+
+
+</script>
+
 
 </body>
+
 </html>
